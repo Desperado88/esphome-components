@@ -1,0 +1,41 @@
+substitutions:
+  oralb_toothbrush_mac: !secret oralb_toothbrush_mac
+  oralb_toothbrush_name_prefix: Oral-B Toothbrush
+  oralb_toothbrush_id_prefix: oralb_toothbrush
+
+esp32_ble_tracker:
+
+myhomeiot_ble_host:
+
+myhomeiot_ble_client:
+  - mac_address: ${oralb_toothbrush_mac}
+    service_uuid: 'A0F0FF00-5047-4D53-8208-4F72616C2D42' # Oral-B SmartSeries
+    characteristic_uuid: 'A0F0FF05-5047-4D53-8208-4F72616C2D42'
+    update_interval: 12h
+    on_value:
+      then:
+        lambda: |-
+          if (x.size() < 4)
+          {
+            ESP_LOGE("myhomeiot_ble_client", "payload has wrong size (%d)", x.size());
+            return;
+          };
+          id(${oralb_toothbrush_id_prefix}_battery).publish_state(x[0]);
+          id(${oralb_toothbrush_id_prefix}_battery_voltage).publish_state((x[2] << 8 | x[1]) / 1000.0f);
+
+sensor:
+  - platform: template
+    id: ${oralb_toothbrush_id_prefix}_battery
+    name: ${oralb_toothbrush_name_prefix} Battery
+    device_class: battery
+    unit_of_measurement: '%'
+    state_class: measurement
+    accuracy_decimals: 0
+
+  - platform: template
+    id: ${oralb_toothbrush_id_prefix}_battery_voltage
+    name: ${oralb_toothbrush_name_prefix} Battery Voltage
+    device_class: voltage
+    unit_of_measurement: V
+    state_class: measurement
+    accuracy_decimals: 3
